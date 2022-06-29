@@ -101,6 +101,3 @@ class FHA_Refinance(FHA_Loan):
         Monthly P&I: ${:,.2f}
         Monthly MIP:  ${:,.2f}
         '''.format(self.price, self.equity, self.cash_out, self.rate, self.base_loan_amount, self.upfront_MIP, self.loan_amount, self.monthly_payment, self.monthly_payment - (super().get_annual_MIP()/12), super().get_annual_MIP()/12)
-
-loan = FHA_Refinance(200000, 100000, 5, 30, cash_out = 2000)
-print(loan)
