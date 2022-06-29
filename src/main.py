@@ -1,62 +1,64 @@
 # Created by James Beegen
 # 
 # Based on HUD guidelines as of 5/10/2022
-
-class FHA_Purchase():
-
-    def __set_monthly_payment(self):
+class FHA_Loan(object):
+    def set_monthly_payment(self):
         # Monthly interest
-        c = (self.__rate/100) / 12
+        c = (self.rate/100) / 12
 
-        return self.__loan_amount * ((c*(1+c)**self.__term)/(((1+c)**self.__term) - 1))
+        return self.loan_amount * ((c*(1+c)**self.term)/(((1+c)**self.term) - 1))
 
-
-    def __get_annual_MIP(self):
-        if self.__term == 15:
-            if self.__base_loan_amount > 625500:
-                if self.__ltv > 95:
-                    return self.__base_loan_amount * .0105
+    def get_annual_MIP(self):
+        if self.term == 15:
+            if self.base_loan_amount > 625500:
+                if self.ltv > 95:
+                    return self.base_loan_amount * .0105
                 else:
-                    return self.__base_loan_amount * .01
+                    return self.base_loan_amount * .01
             else:
                 if self.__ltv > 95:
-                    return self.__base_loan_amount * .0085
+                    return self.base_loan_amount * .0085
                 else:
-                    return self.__base_loan_amount * .008
+                    return self.base_loan_amount * .008
         else:
-            if self.__base_loan_amount > 625500:
-                if self.__ltv > 90:
-                    return self.__base_loan_amount * .0095
-                elif 78 < self.__ltv <= 90:
-                    return self.__base_loan_amount * .007
+            if self.base_loan_amount > 625500:
+                if self.ltv > 90:
+                    return self.base_loan_amount * .0095
+                elif 78 < self.ltv <= 90:
+                    return self.base_loan_amount * .007
                 else:
-                    return self.__base_loan_amount * .0045
+                    return self.base_loan_amount * .0045
             else:
-                if self.__ltv > 90:
-                    return self.__base_loan_amount * .007
+                if self.ltv > 90:
+                    return self.base_loan_amount * .007
                 else:
-                    return self.__base_loan_amount * .0045
+                    return self.base_loan_amount * .0045
 
+    def check_il(self):
+        if self.indian_lands:
+            self.upfront_MIP = 0
+        else:
+            self.upfront_MIP = self.base_loan_amount * .0175
 
+    def __init__(self, p, r, t, hhl=False, il=False):
+        self.price = p
+        self.rate = r
+        self.term = t*12
+        self.hawaiian_home_lands = hhl
+        self.indian_lands = il
+        
+        
+class FHA_Purchase(FHA_Loan):
     def __init__(self, p, d, r, t, hhl=False, il=False):
-        self.__price = p
-        self.__down_payment_percent = d
-        self.__ltv = 100 - self.__down_payment_percent
-        self.__rate = r
-        self.__term = t*12
-        self.__hawaiian_home_lands = hhl
-        self.__indian_lands = il
-        self.__down_payment = p * (d/100)
-        self.__base_loan_amount = self.__price * (self.__ltv/100)
-
-        if self.__indian_lands:
-            self.__upfront_MIP = 0
-        else:
-            self.__upfront_MIP = self.__base_loan_amount * .0175
-
-        self.__loan_amount = self.__base_loan_amount + self.__upfront_MIP
-        self.__monthly_MIP = self.__get_annual_MIP() / 12
-        self.__monthly_payment = self.__set_monthly_payment() + self.__monthly_MIP
+        super().__init__(p, r, t, hhl, il)
+        self.down_payment_percent = d
+        self.ltv = 100 - self.down_payment_percent
+        self.down_payment = p * (d/100)
+        self.base_loan_amount = self.price * (self.ltv/100)
+        super().check_il()
+        self.loan_amount = self.base_loan_amount + self.upfront_MIP
+        self.monthly_MIP = super().get_annual_MIP() / 12
+        self.monthly_payment = super().set_monthly_payment() + self.monthly_MIP
 
     def __str__(self):
         return '''
@@ -70,4 +72,35 @@ class FHA_Purchase():
         Monthly Payment:  ${:,.2f}
         Monthly P&I: ${:,.2f}
         Monthly MIP:  ${:,.2f}
-        '''.format(self.__price, self.__down_payment, self.__rate, self.__base_loan_amount, self.__upfront_MIP, self.__loan_amount, self.__monthly_payment, self.__monthly_payment - (self.__get_annual_MIP()/12), self.__get_annual_MIP()/12)
+        '''.format(self.price, self.down_payment, self.rate, self.base_loan_amount, self.upfront_MIP, self.loan_amount, self.monthly_payment, self.monthly_payment - (super().get_annual_MIP()/12), super().get_annual_MIP()/12)
+
+
+class FHA_Refinance(FHA_Loan):
+    def __init__(self, p, e, r, t, cash_out=0, hhl=False, il=False):
+        super().__init__(p, r, t, hhl, il)
+        self.equity = e
+        self.cash_out = cash_out
+        self.ltv = 100 - ((self.equity - self.cash_out)/self.price) * 100
+        self.base_loan_amount = self.price * (self.ltv/100)
+        super().check_il()
+        self.loan_amount = self.base_loan_amount + self.upfront_MIP
+        self.monthly_MIP = super().get_annual_MIP() / 12
+        self.monthly_payment = super().set_monthly_payment() + self.monthly_MIP
+
+    def __str__(self):
+        return '''
+        Home Value: ${:,.2f}
+        Equity: ${:,.2f}
+        Cash out: ${:,.2f}
+        Interest Rate: {}%
+        Base Loan Amount: ${:,.2f}
+        Upfront MIP: ${:,.2f}
+        Loan Amount: ${:,.2f}
+
+        Monthly Payment:  ${:,.2f}
+        Monthly P&I: ${:,.2f}
+        Monthly MIP:  ${:,.2f}
+        '''.format(self.price, self.equity, self.cash_out, self.rate, self.base_loan_amount, self.upfront_MIP, self.loan_amount, self.monthly_payment, self.monthly_payment - (super().get_annual_MIP()/12), super().get_annual_MIP()/12)
+
+loan = FHA_Refinance(200000, 100000, 5, 30, cash_out = 2000)
+print(loan)
