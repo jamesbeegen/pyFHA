@@ -4,7 +4,8 @@ Python package used to create FHA Mortgage objects. The following data points ar
 * Principal and interest payments
 * Monthly MIP
 * Upfront MIP  
-* __Current version only supports Purchase Loans__  
+* Down payment amount
+* LTV
 
 More features will be added with time such as:
 * Amortization Schedules
